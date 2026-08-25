@@ -6,7 +6,7 @@ admin.initializeApp();
 const db = admin.firestore();
 
 // আপনার টেলিগ্রাম বোটের টোকেন এখানে দিন
-const BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN_HERE";
+const BOT_TOKEN = "8895211701:AAGo31P6oWpyhM7KX2D-atbWxWAojIqZtVU";
 
 // ৪টি চ্যানেলের ইউজারনেম (অবশ্যই বোটকে এই চ্যানেলগুলোতে Admin হতে হবে)
 const REQUIRED_CHANNELS = [
