@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>ATF Mining</title>
+
+<!-- Telegram Web App SDK -->
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<!-- FIREBASE SDK (COMPAT VERSION) -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;
+ background:#050505;
+ color:#fff;
+ font-family:Arial,sans-serif;
+ overflow-x:hidden;
+}
+
+/* SPLASH LOADING SCREEN */
+#splashScreen {
+ position: fixed;
+ top: 0; left: 0; width: 100%; height: 100%;
+ background: #050505;
+ display: flex;
+ flex-direction: column;
+ justify-content: center;
+ align-items: center;
+ z-index: 9999;
+}
+.splashLogo {
+ width: 100px;
+ height: 100px;
+ border-radius: 50%;
+ background: radial-gradient(circle at 30% 25%,#fff2a4,#ffc22e 35%,#d47d00 70%,#633700);
+ border: 5px solid #f2b52d;
+ display: grid;
+ place-items: center;
+ font-size: 26px;
+ font-weight: 900;
+ color: #241400;
+ box-shadow: 0 0 35px #ffad22aa;
+ animation: pulse 1.5s infinite alternate;
+}
+@keyframes pulse {
+ 0% { transform: scale(0.95); }
+ 100% { transform: scale(1.05); }
+}
+.loaderText {
+ margin-top: 20px;
+ color: #ffb52b;
+ font-weight: bold;
+ font-size: 14px;
+ letter-spacing: 1px;
+}
+
+.app{
+ max-width:430px;
+ min-height:100vh;
+ margin:auto;
+ padding:15px 14px 90px;
+ background:radial-gradient(circle at top,#3b2308,#090909 45%,#050505);
+ display:none;
+}
+
+.header{
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+}
+.logo{
+ color:#ffb52b;
+ font-size:24px;
+ font-weight:900;
+}
+.coinLogo{
+ width:45px;
+ height:45px;
+ border-radius:50%;
+ background:#ffae18;
+ color:#111;
+ display:grid;
+ place-items:center;
+ font-weight:900;
+}
+.page{display:none}
+.page.active{display:block}
+
+.card{
+ margin-top:14px;
+ padding:17px;
+ border-radius:20px;
+ background:#101010;
+ border:1px solid #4b3417;
+ box-shadow:0 10px 30px #0008;
+}
+.center{text-align:center}
+.muted{color:#999;font-size:13px}
+
+.balance{
+ margin:8px 0;
+ color:#ffb52b;
+ font-size:35px;
+ font-weight:900;
+}
+
+.status{
+ color:#62e987;
+ font-size:13px;
+ margin:8px 0;
+}
+
+.progress{
+ width:100%;
+ height:8px;
+ background:#292929;
+ border-radius:10px;
+ overflow:hidden;
+}
+.progress span{
+ display:block;
+ height:100%;
+ width:0%;
+ background:#ffae18;
+ transition:.3s;
+}
+
+.miningBox{
+ height:250px;
+ margin-top:15px;
+ position:relative;
+ overflow:hidden;
+ border-radius:22px;
+ border:1px solid #553a16;
+ background:radial-gradient(circle,#4b2b08,#120c05 50%,#070707);
+ display:grid;
+ place-items:center;
+}
+
+.coin{
+ width:115px;
+ height:115px;
+ border-radius:50%;
+ display:grid;
+ place-items:center;
+ color:#241400;
+ font-weight:1000;
+ font-size:29px;
+ background:radial-gradient(circle at 30% 25%,#fff2a4,#ffc22e 35%,#d47d00 70%,#633700);
+ border:7px solid #f2b52d;
+ box-shadow:0 0 35px #ffad22aa;
+ animation:spin 3s linear infinite;
+}
+
+@keyframes spin{
+ 0%{transform:rotateY(0)}
+ 100%{transform:rotateY(360deg)}
+}
+
+.live{
+ position:absolute;
+ top:12px;
+ left:12px;
+ padding:7px 10px;
+ border-radius:20px;
+ background:#102416;
+ border:1px solid #27743e;
+ color:#67eb8b;
+ font-size:10px;
+ font-weight:bold;
+}
+
+.rate{
+ position:absolute;
+ top:12px;
+ right:12px;
+ padding:7px 10px;
+ border-radius:20px;
+ background:#211607;
+ border:1px solid #815817;
+ color:#ffc04a;
+ font-size:10px;
+ font-weight:bold;
+}
+
+.liveEarn{
+ position:absolute;
+ bottom:13px;
+ text-align:center;
+}
+.liveEarn small{
+ display:block;
+ color:#999;
+}
+.liveEarn b{
+ color:#67ed8b;
+ font-size:20px;
+}
+
+.btn{
+ width:100%;
+ border:0;
+ padding:14px;
+ margin-top:13px;
+ border-radius:14px;
+ background:linear-gradient(90deg,#ff9700,#ffc34f);
+ color:#111;
+ font-weight:900;
+ cursor:pointer;
+}
+.btn:disabled{
+ opacity:.5;
+}
+
+.secondary{
+ background:#17120b;
+ color:#ffb52b;
+ border:1px solid #8b5b13;
+}
+
+.grid{
+ display:grid;
+ grid-template-columns:1fr 1fr;
+ gap:10px;
+ margin-top:10px;
+}
+
+.smallCard{
+ padding:14px;
+ border-radius:16px;
+ background:#101010;
+ border:1px solid #3e2c16;
+}
+.smallCard b{
+ display:block;
+ margin-top:5px;
+ color:#ffb52b;
+}
+
+.title{
+ margin:20px 2px 10px;
+ font-size:21px;
+ font-weight:900;
+}
+
+.row{
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+ gap:10px;
+}
+
+.tag{
+ padding:6px 9px;
+ border-radius:20px;
+ background:#241b0d;
+ border:1px solid #644719;
+ color:#ffb52b;
+ font-size:11px;
+}
+
+.vip{
+ margin-top:11px;
+ padding:15px;
+ border-radius:17px;
+ background:#12100c;
+ border:1px solid #513817;
+}
+.vip.locked{opacity:.55}
+.vip.unlocked{
+ border-color:#d89220;
+ box-shadow:0 0 20px #d8922022;
+}
+.vip h3{
+ margin:0;
+ color:#ffc04a;
+}
+.vipGrid{
+ display:grid;
+ grid-template-columns:1fr 1fr;
+ gap:7px;
+ margin-top:11px;
+}
+.vipStat{
+ padding:9px;
+ border-radius:9px;
+ background:#080808;
+}
+.vipStat small{
+ display:block;
+ color:#888;
+}
+.vipStat b{
+ display:block;
+ color:#ffb52b;
+ margin-top:3px;
+}
+
+.vipBtn{
+ width:100%;
+ padding:11px;
+ margin-top:11px;
+ border-radius:11px;
+ background:#1c1408;
+ border:1px solid #976416;
+ color:#ffbd42;
+ font-weight:900;
+ cursor:pointer;
+}
+.vipBtn:disabled{
+ color:#666;
+ border-color:#333;
+}
+
+.input{
+ width:100%;
+ padding:13px;
+ margin-top:8px;
+ background:#090909;
+ color:#fff;
+ border:1px solid #3b3b3b;
+ border-radius:11px;
+ outline:none;
+}
+
+.network{
+ margin-top:9px;
+ padding:13px;
+ border-radius:12px;
+ background:#0b0b0b;
+ border:1px solid #3b3b3b;
+ cursor:pointer;
+}
+.network.selected{
+ border-color:#ffae1b;
+ background:#1b1308;
+ color:#ffbc42;
+}
+
+.notice{
+ margin-top:10px;
+ color:#999;
+ font-size:11px;
+ line-height:1.5;
+}
+
+.nav{
+ position:fixed;
+ bottom:0;
+ left:50%;
+ transform:translateX(-50%);
+ width:min(430px,100%);
+ display:grid;
+ grid-template-columns:repeat(6,1fr);
+ padding:8px 2px 10px;
+ background:#080808;
+ border-top:1px solid #292929;
+ z-index:20;
+}
+
+.nav button{
+ background:none;
+ border:0;
+ color:#777;
+ font-size:9px;
+ cursor:pointer;
+ padding: 2px;
+}
+.nav button.active{
+ color:#ffb52b;
+}
+.nav span{
+ display:block;
+ font-size:17px;
+ margin-bottom:3px;
+}
+
+.toast{
+ position:fixed;
+ bottom:85px;
+ left:50%;
+ transform:translateX(-50%);
+ padding:11px 15px;
+ border-radius:11px;
+ background:#191919;
+ border:1px solid #513817;
+ opacity:0;
+ pointer-events:none;
+ transition:.25s;
+ z-index:50;
+ font-size:12px;
+}
+.toast.show{ opacity:1; }
+
+.overlay{
+ position:fixed;
+ top:0; left:0; right:0; bottom:0;
+ background:rgba(0,0,0,0.98);
+ z-index:1000;
+ display:flex;
+ flex-direction:column;
+ justify-content:center;
+ align-items:center;
+ padding:20px;
+}
+.channel-btn{
+ width:100%;
+ padding:12px;
+ margin:5px 0;
+ background:#1a140b;
+ border:1px solid #ffae18;
+ color:#fff;
+ border-radius:10px;
+ text-decoration:none;
+ text-align:center;
+ font-weight:bold;
+ display:block;
+ font-size: 13px;
+}
+
+.wheel-container {
+ display:flex;
+ flex-direction:column;
+ align-items:center;
+ position:relative;
+ margin-top:15px;
+}
+.wheel {
+ width: 200px;
+ height: 200px;
+ border-radius: 50%;
+ border: 5px solid #ffb52b;
+ position: relative;
+ transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+ background: conic-gradient(
+  #ff9700 0deg 60deg, 
+  #222 60deg 120deg, 
+  #ffc34f 120deg 180deg, 
+  #333 180deg 240deg, 
+  #ff9700 240deg 300deg, 
+  #444 300deg 360deg
+ );
+}
+.pointer {
+ width: 0; 
+ height: 0; 
+ border-left: 10px solid transparent;
+ border-right: 10px solid transparent;
+ border-top: 20px solid #fff;
+ position: absolute;
+ top: -10px;
+ z-index: 10;
+}
+</style>
+</head>
+
+<body>
+
+<!-- SPLASH SCREEN -->
+<div id="splashScreen">
+ <div class="splashLogo">ATF</div>
+ <div class="loaderText">LOADING ATF MINING...</div>
+</div>
+
+<!-- CHANNEL JOIN MODAL -->
+<div class="overlay" id="channelModal" style="display:none;">
+ <h2 style="color:#ffb52b; margin-bottom: 5px;">📢 Join All Channels</h2>
+ <p class="muted center" style="margin-bottom: 15px;">You must join all 4 channels to enter the app!</p>
+ 
+ <a href="https://t.me/rdx_signel_gurup" target="_blank" class="channel-btn">🔹 ATF Official</a>
+ <a href="https://t.me/the_earning_1122" target="_blank" class="channel-btn">🔹 ATF Support</a>
+ <a href="https://t.me/mining_the_gorup" target="_blank" class="channel-btn">🔹 ATF Chat Group</a>
+ <a href="https://t.me/easy_income_cenel" target="_blank" class="channel-btn">🔹 Easy Income Channel</a>
+ 
+ <button class="btn" style="margin-top:15px" onclick="verifyChannels()">I HAVE JOINED ALL</button>
+</div>
+
+<!-- ANTI-MULTI ACCOUNT MODAL -->
+<div class="overlay" id="multiBlockModal" style="display:none;">
+ <h2 style="color:#ff4444">⚠️ Access Denied</h2>
+ <p class="muted center">Multiple accounts on the same device are strictly prohibited!</p>
+</div>
+
+<!-- APP MAIN CONTAINER -->
+<div class="app" id="mainApp">
+
+<div class="header">
+ <div class="logo">ATF MINING</div>
+ <div class="coinLogo">ATF</div>
+</div>
+
+<!-- MINING -->
+<section id="mining" class="page active">
+<div class="card">
+<div class="center">
+ <div class="muted">YOUR BALANCE</div>
+ <div class="balance" id="balance">0.0000 ATF</div>
+ <div class="muted">100,000 ATF = 1 USDT</div>
+ <div class="status" id="status">● READY</div>
+</div>
+
+<div class="miningBox">
+ <div class="live">● LIVE MINING</div>
+ <div class="rate" id="mineRateText">⚡ 1,000 ATF / HOUR</div>
+ <div class="coin">ATF</div>
+ <div class="liveEarn">
+  <small>LIVE EARNED</small>
+  <b id="liveEarn">+0.0000 ATF</b>
+ </div>
+</div>
+
+<div class="progress" style="margin-top:15px">
+ <span id="mineProgress"></span>
+</div>
+
+<button class="btn" id="mineBtn" onclick="startMiningAds()">
+ WATCH 10 ADS & START
+</button>
+
+<div class="notice center">Complete all rewarded ads before mining starts.</div>
+</div>
+
+<div class="grid">
+<div class="smallCard">
+⛏️ Mining Rate
+<b id="smallRate">1,000 ATF/h</b>
+</div>
+
+<div class="smallCard">
+👥 Referrals
+<b id="refSmall">0</b>
+</div>
+</div>
+</section>
+
+<!-- SPIN WHEEL -->
+<section id="spinPage" class="page">
+<div class="title">🎡 Lucky Spin Wheel</div>
+<div class="card center">
+ <div class="muted">Watch 2 Ads to Spin and Win ATF</div>
+ <div class="wheel-container">
+  <div class="pointer"></div>
+  <div class="wheel" id="wheel"></div>
+ </div>
+ <button class="btn" id="spinBtn" onclick="startSpinProcess()">WATCH 2 ADS & SPIN</button>
+</div>
+</section>
+
+<!-- REFER -->
+<section id="refer" class="page">
+<div class="title">👥 Referral</div>
+<div class="card">
+<div class="row">
+ <div>
+  <b>Referral Reward</b>
+  <div class="muted">300 ATF per referral</div>
+ </div>
+ <div class="tag" id="refCount">0 Referrals</div>
+</div>
+
+<div class="progress" style="margin-top:15px">
+ <span id="refProgress"></span>
+</div>
+
+<p class="notice">You need at least 10 successful referrals to withdraw.</p>
+
+<button class="btn" onclick="copyReferral()">COPY REFERRAL LINK</button>
+<button class="btn secondary" onclick="shareReferral()">SHARE REFERRAL</button>
+</div>
+
+<div class="card">
+<div class="muted">Referral Earnings</div>
+<div class="balance" style="font-size:27px" id="refEarn">0 ATF</div>
+</div>
+</section>
+
+<!-- TASK -->
+<section id="task" class="page">
+<div class="title">🎁 Daily Task</div>
+<div class="card">
+<div class="row">
+<div>
+ <b>Watch 30 Ads</b>
+ <div class="muted">50 ATF each</div>
+</div>
+<div class="tag" id="taskCount">0 / 30</div>
+</div>
+
+<div class="progress" style="margin-top:14px">
+ <span id="taskProgress"></span>
+</div>
+
+<button class="btn" id="taskBtn" onclick="startDailyAds()">WATCH DAILY ADS</button>
+<div class="notice">Maximum daily task reward = 1,500 ATF.</div>
+</div>
+</section>
+
+<!-- VIP -->
+<section id="vip" class="page">
+<div class="title">👑 VIP Mining</div>
+<div class="card">
+<div class="row">
+ <div>
+  <b>Your VIP Level</b>
+  <div class="muted">Based on referrals</div>
+ </div>
+ <div class="tag" id="vipLevel">VIP 0</div>
+</div>
+</div>
+
+<div class="vip locked" id="vip1">
+<h3>👑 VIP 1</h3>
+<div class="vipGrid">
+<div class="vipStat"><small>Referrals</small><b>20</b></div>
+<div class="vipStat"><small>Mining</small><b>2,000/h</b></div>
+<div class="vipStat"><small>Ads</small><b>20</b></div>
+<div class="vipStat"><small>Duration</small><b>1 Hour</b></div>
+</div>
+<button class="vipBtn" id="vip1Btn" onclick="startVIP(1)" disabled>LOCKED</button>
+</div>
+
+<div class="vip locked" id="vip2">
+<h3>💎 VIP 2</h3>
+<div class="vipGrid">
+<div class="vipStat"><small>Referrals</small><b>25</b></div>
+<div class="vipStat"><small>Mining</small><b>2,500/h</b></div>
+<div class="vipStat"><small>Ads</small><b>20</b></div>
+<div class="vipStat"><small>Duration</small><b>1 Hour</b></div>
+</div>
+<button class="vipBtn" id="vip2Btn" onclick="startVIP(2)" disabled>LOCKED</button>
+</div>
+
+<div class="vip locked" id="vip3">
+<h3>🔥 VIP 3</h3>
+<div class="vipGrid">
+<div class="vipStat"><small>Referrals</small><b>50</b></div>
+<div class="vipStat"><small>Mining</small><b>4,000/h</b></div>
+<div class="vipStat"><small>Ads</small><b>30</b></div>
+<div class="vipStat"><small>Duration</small><b>1 Hour</b></div>
+</div>
+<button class="vipBtn" id="vip3Btn" onclick="startVIP(3)" disabled>LOCKED</button>
+</div>
+
+<div class="vip locked" id="vip100">
+<h3>🚀 VIP 3 — SUPER</h3>
+<div class="vipGrid">
+<div class="vipStat"><small>Referrals</small><b>100</b></div>
+<div class="vipStat"><small>Mining</small><b>4,000/h</b></div>
+<div class="vipStat"><small>Ads</small><b>30</b></div>
+<div class="vipStat"><small>Duration</small><b>1 Hour</b></div>
+</div>
+<button class="vipBtn" id="vip100Btn" onclick="startVIP(100)" disabled>LOCKED</button>
+</div>
+</section>
+
+<!-- WITHDRAW -->
+<section id="withdraw" class="page">
+<div class="title">💸 Withdraw</div>
+<div class="card">
+<div class="muted">Available Balance</div>
+<div class="balance" style="font-size:28px" id="withdrawBalance">0.0000 ATF</div>
+<div class="muted">1 USDT = 100,000 ATF</div>
+
+<div class="network selected" id="ton" onclick="selectNetwork('TON')">💎 USDT — TON</div>
+<div class="network" id="bep20" onclick="selectNetwork('BEP-20')">🟡 USDT — BEP-20</div>
+
+<input class="input" id="wallet" placeholder="Enter USDT wallet address">
+<button class="btn" onclick="withdraw()">REQUEST WITHDRAWAL</button>
+
+<div class="notice">
+Minimum withdrawal: 100,000 ATF<br>
+Minimum referrals: 10
+</div>
+</div>
+</section>
+
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="nav">
+<button class="active" onclick="openPage('mining',this)"><span>⛏️</span>Mining</button>
+<button onclick="openPage('spinPage',this)"><span>🎡</span>Spin</button>
+<button onclick="openPage('refer',this)"><span>👥</span>Refer</button>
+<button onclick="openPage('task',this)"><span>🎁</span>Task</button>
+<button onclick="openPage('vip',this)"><span>👑</span>VIP</button>
+<button onclick="openPage('withdraw',this)"><span>💸</span>Withdraw</button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<!-- MONETAG SDK -->
+<script src="//libtl.com/sdk.js" data-zone="11554790" data-sdk="show_11554790"></script>
+
+<script>
+// ================= FIREBASE INITIALIZATION =================
+const firebaseConfig = {
+  apiKey: "AIzaSyAdwa_dIAsI-qXcFiFpzhBq-990DWCHGVI",
+  authDomain: "mining-bot-8e30c.firebaseapp.com",
+  projectId: "mining-bot-8e30c",
+  storageBucket: "mining-bot-8e30c.firebasestorage.app",
+  messagingSenderId: "694631075545",
+  appId: "1:694631075545:web:bd24fd2eaa543fd7bf78c8",
+  measurementId: "G-M5E0JB7XCR"
+};
+
+// Initialize Firebase with Compat SDK
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// ================= APP VARIABLES =================
+const tg = window.Telegram?.WebApp;
+if(tg) tg.expand();
+
+const BOT_USERNAME = "ATF_MINING_THE_BOT";
+const userId = tg?.initDataUnsafe?.user?.id || "demo_user";
+
+let balance = 0;
+let referrals = 0;
+let dailyAds = 0;
+
+let miningActive = false;
+let adRunning = false;
+let selectedNetwork = "TON";
+let miningInterval = null;
+let currentRotation = 0;
+
+// FIREBASE REAL-TIME SYNC
+async function initFirebaseUser() {
+ if(!userId) return;
+ const userRef = db.collection("users").doc(String(userId));
+ 
+ userRef.onSnapshot((doc) => {
+  if (doc.exists) {
+   const data = doc.data();
+   balance = data.balance || 0;
+   referrals = data.referrals || 0;
+   dailyAds = data.dailyAds || 0;
+   updateUI();
+  } else {
+   userRef.set({
+    balance: 0,
+    referrals: 0,
+    dailyAds: 0,
+    joinedAt: new Date()
+   });
+  }
+ });
+}
+
+function saveState(){
+ if(!userId) return;
+ db.collection("users").doc(String(userId)).update({
+  balance: balance,
+  referrals: referrals,
+  dailyAds: dailyAds
+ }).catch(err => console.log("Firebase sync error:", err));
+}
+
+// SPLASH SCREEN & ACCESS CONTROL
+window.addEventListener('DOMContentLoaded', () => {
+ initFirebaseUser();
+ setTimeout(() => {
+  document.getElementById('splashScreen').style.display = 'none';
+  if (checkMultiAccount()) {
+   checkChannelJoin();
+  }
+ }, 1500);
+});
+
+function checkMultiAccount(){
+ const savedDeviceUser = localStorage.getItem('atf_device_user');
+ if(savedDeviceUser && savedDeviceUser !== String(userId)){
+  document.getElementById("multiBlockModal").style.display = "flex";
+  return false;
+ } else {
+  localStorage.setItem('atf_device_user', userId);
+  return true;
+ }
+}
+
+function checkChannelJoin(){
+ const isVerified = localStorage.getItem('atf_channels_joined');
+ if(!isVerified){
+  document.getElementById("channelModal").style.display = "flex";
+  document.getElementById("mainApp").style.display = "none";
+ } else {
+  document.getElementById("mainApp").style.display = "block";
+ }
+}
+
+function verifyChannels(){
+ localStorage.setItem('atf_channels_joined', 'true');
+ document.getElementById("channelModal").style.display = "none";
+ document.getElementById("mainApp").style.display = "block";
+ toast("Welcome to ATF Mining!");
+}
+
+function money(n){ return Number(n).toLocaleString(undefined,{minimumFractionDigits:4,maximumFractionDigits:4}); }
+
+function toast(msg){
+ const box = document.getElementById("toast");
+ box.innerText = msg;
+ box.classList.add("show");
+ setTimeout(()=> box.classList.remove("show"), 2500);
+}
+
+function openPage(page, button){
+ document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+ document.getElementById(page).classList.add("active");
+ document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
+ button.classList.add("active");
+ updateUI();
+}
+
+function showMonetagAd(){
+ return new Promise((resolve)=>{
+  if(typeof window.show_11554790 !== "function"){
+   toast("Monetag SDK loading... Try again.");
+   return resolve(false);
+  }
+  window.show_11554790().then(()=> resolve(true)).catch(()=> resolve(false));
+ });
+}
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// SPIN WHEEL
+async function startSpinProcess(){
+ if(adRunning) return toast("Ad session active.");
+
+ const btn = document.getElementById("spinBtn");
+ btn.disabled = true;
+
+ for(let i=1; i<=2; i++){
+  btn.innerText = `WATCHING AD ${i} / 2`;
+  const ok = await showMonetagAd();
+  if(!ok){
+   btn.disabled = false;
+   btn.innerText = "WATCH 2 ADS & SPIN";
+   return toast("Ad not completed!");
+  }
+  await sleep(1000);
+ }
+
+ btn.innerText = "SPINNING...";
+ spinWheel();
+}
+
+function spinWheel(){
+ const wheel = document.getElementById("wheel");
+ const randomReward = Math.floor(Math.random() * 50) + 10;
+ const randomDeg = Math.floor(Math.random() * 360) + 1440;
+ 
+ currentRotation += randomDeg;
+ wheel.style.transform = `rotate(${currentRotation}deg)`;
+
+ setTimeout(()=>{
+  balance += randomReward;
+  saveState();
+  updateUI();
+  toast(`🎉 Won ${randomReward} ATF!`);
+  const btn = document.getElementById("spinBtn");
+  btn.disabled = false;
+  btn.innerText = "WATCH 2 ADS & SPIN";
+ }, 4000);
+}
+
+// MINING ADS
+async function startMiningAds(){
+ if(adRunning || miningActive) return toast("Mining session active.");
+ 
+ adRunning = true;
+ const button = document.getElementById("mineBtn");
+ button.disabled = true;
+
+ for(let ad = 1; ad <= 10; ad++){
+  button.innerText = `WATCHING AD ${ad} / 10`;
+  document.getElementById("status").innerText = `● WATCHING AD ${ad} / 10`;
+
+  const ok = await showMonetagAd();
+  if(!ok){
+   adRunning = false;
+   button.disabled = false;
+   button.innerText = "WATCH 10 ADS & START";
+   toast("Ad failed or skipped!");
+   return;
+  }
+  await sleep(1500);
+ }
+
+ adRunning = false;
+ startMining(1000, "NORMAL MINING");
+}
+
+async function startVIP(level){
+ const configs = {
+  1:{req:20, ads:20, rate:2000},
+  2:{req:25, ads:20, rate:2500},
+  3:{req:50, ads:30, rate:4000},
+  100:{req:100, ads:30, rate:4000}
+ };
+ const cfg = configs[level];
+ if(referrals < cfg.req) return toast(`Needs ${cfg.req} referrals.`);
+ if(adRunning || miningActive) return toast("Mining active.");
+
+ adRunning = true;
+ const btn = document.getElementById(level === 100 ? "vip100Btn" : `vip${level}Btn`);
+ btn.disabled = true;
+
+ for(let ad = 1; ad <= cfg.ads; ad++){
+  btn.innerText = `AD ${ad} / ${cfg.ads}`;
+  const ok = await showMonetagAd();
+  if(!ok){
+   adRunning = false;
+   updateVIP();
+   toast("VIP Ad Skipped");
+   return;
+  }
+  await sleep(1500);
+ }
+
+ adRunning = false;
+ startMining(cfg.rate, `VIP ${level}`);
+}
+
+function startMining(rewardPerHour, label){
+ miningActive = true;
+ const duration = 3600 * 1000;
+ const endTime = Date.now() + duration;
+
+ localStorage.setItem('atf_mine_end', endTime);
+ localStorage.setItem('atf_mine_rate', rewardPerHour);
+
+ runMiningLoop(endTime, rewardPerHour, label);
+}
+
+function runMiningLoop(endTime, rate, label){
+ const button = document.getElementById("mineBtn");
+ button.disabled = true;
+ button.innerText = "MINING ACTIVE";
+
+ document.getElementById("mineRateText").innerText = `⚡ ${rate.toLocaleString()} ATF / HOUR`;
+ document.getElementById("smallRate").innerText = `${rate.toLocaleString()} ATF/h`;
+
+ clearInterval(miningInterval);
+ miningInterval = setInterval(()=>{
+  const now = Date.now();
+  const left = endTime - now;
+
+  if(left <= 0){
+   clearInterval(miningInterval);
+   miningActive = false;
+   balance += rate;
+   saveState();
+
+   localStorage.removeItem('atf_mine_end');
+   localStorage.removeItem('atf_mine_rate');
+
+   document.getElementById("liveEarn").innerText = `+${rate.toFixed(4)} ATF`;
+   document.getElementById("mineProgress").style.width = "0%";
+   document.getElementById("status").innerText = `● COLLECTED +${rate} ATF`;
+   button.disabled = false;
+   button.innerText = "WATCH 10 ADS & START";
+   toast(`+${rate} ATF Mining Complete!`);
+   updateUI();
+  } else {
+   const elapsedSec = (3600000 - left) / 1000;
+   const earned = (rate / 3600) * elapsedSec;
+   const pct = ((3600000 - left) / 3600000) * 100;
+
+   document.getElementById("liveEarn").innerText = `+${earned.toFixed(4)} ATF`;
+   document.getElementById("mineProgress").style.width = `${pct}%`;
+   document.getElementById("status").innerText = `● ${label} — ${Math.ceil(left/1000)}s LEFT`;
+  }
+ }, 1000);
+}
+
+function checkMiningResume(){
+ const endTime = parseInt(localStorage.getItem('atf_mine_end'));
+ const rate = parseFloat(localStorage.getItem('atf_mine_rate'));
+
+ if(endTime && rate){
+  if(Date.now() >= endTime){
+   balance += rate;
+   saveState();
+   localStorage.removeItem('atf_mine_end');
+   localStorage.removeItem('atf_mine_rate');
+   toast(`Offline Mining Reward Added: +${rate} ATF`);
+  } else {
+   miningActive = true;
+   runMiningLoop(endTime, rate, "ACTIVE MINING");
+  }
+ }
+}
+
+async function startDailyAds(){
+ if(adRunning || miningActive) return toast("Finish active task first.");
+ if(dailyAds >= 30) return toast("Daily limit reached.");
+
+ adRunning = true;
+ const btn = document.getElementById("taskBtn");
+ btn.disabled = true;
+
+ const ok = await showMonetagAd();
+ adRunning = false;
+ btn.disabled = false;
+
+ if(ok){
+  dailyAds++;
+  balance += 50;
+  saveState();
+  toast("+50 ATF Earned!");
+  updateUI();
+ }
+}
+
+function copyReferral(){
+ const link = `https://t.me/${BOT_USERNAME}?start=${userId}`;
+ navigator.clipboard?.writeText(link);
+ toast("Referral link copied!");
+}
+
+function shareReferral(){
+ const link = `https://t.me/${BOT_USERNAME}?start=${userId}`;
+ if(tg?.openTelegramLink){
+  tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent("Join ATF Mining and Earn Daily Crypto!")}`);
+ } else {
+  copyReferral();
+ }
+}
+
+function updateVIP(){
+ const levels = [
+  {id:"vip1", btn:"vip1Btn", need:20, ads:20},
+  {id:"vip2", btn:"vip2Btn", need:25, ads:20},
+  {id:"vip3", btn:"vip3Btn", need:50, ads:30},
+  {id:"vip100", btn:"vip100Btn", need:100, ads:30}
+ ];
+
+ levels.forEach(v=>{
+  const card = document.getElementById(v.id);
+  const btn = document.getElementById(v.btn);
+  const unlocked = referrals >= v.need;
+
+  card.classList.toggle("unlocked", unlocked);
+  card.classList.toggle("locked", !unlocked);
+  btn.disabled = !unlocked;
+  btn.innerText = unlocked ? `WATCH ${v.ads} ADS` : "LOCKED";
+ });
+
+ let level = "VIP 0";
+ if(referrals>=100) level="VIP 3 SUPER";
+ else if(referrals>=50) level="VIP 3";
+ else if(referrals>=25) level="VIP 2";
+ else if(referrals>=20) level="VIP 1";
+
+ document.getElementById("vipLevel").innerText = level;
+}
+
+function selectNetwork(net){
+ selectedNetwork = net;
+ document.getElementById("ton").classList.toggle("selected", net === "TON");
+ document.getElementById("bep20").classList.toggle("selected", net === "BEP-20");
+ toast(`Selected USDT ${net}`);
+}
+
+function withdraw(){
+ if(balance < 100000) return toast("Minimum 100,000 ATF required.");
+ if(referrals < 10) return toast("Minimum 10 referrals required.");
+ const wallet = document.getElementById("wallet").value.trim();
+ if(!wallet) return toast("Enter wallet address!");
+
+ toast("Withdrawal request created.");
+}
+
+function updateUI(){
+ document.getElementById("balance").innerText = `${money(balance)} ATF`;
+ document.getElementById("withdrawBalance").innerText = `${money(balance)} ATF`;
+ document.getElementById("refCount").innerText = `${referrals} Referrals`;
+ document.getElementById("refSmall").innerText = referrals;
+ document.getElementById("refEarn").innerText = `${money(referrals * 300)} ATF`;
+ document.getElementById("refProgress").style.width = `${Math.min((referrals/10)*100, 100)}%`;
+ document.getElementById("taskCount").innerText = `${dailyAds} / 30`;
+ document.getElementById("taskProgress").style.width = `${(dailyAds/30)*100}%`;
+ updateVIP();
+}
+
+checkMiningResume();
+</script>
+
+</body>
+</html>
