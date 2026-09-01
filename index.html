@@ -1,0 +1,1544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>ATC - Crypto Mining</title>
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #050507;
+            --surface-color: rgba(18, 18, 24, 0.75);
+            --surface-border: rgba(212, 175, 55, 0.15);
+            --gold-primary: #D4AF37;
+            --gold-light: #F3E5AB;
+            --gold-dark: #997A15;
+            --neon-green: #00FF66;
+            --neon-blue: #00F0FF;
+            --text-main: #FFFFFF;
+            --text-muted: #8E91A0;
+            --danger: #FF3366;
+            --safe-bottom: env(safe-area-inset-bottom, 20px);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .app-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            background: 
+                radial-gradient(circle at 50% 20%, rgba(212, 175, 55, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 20% 80%, rgba(0, 240, 255, 0.04) 0%, transparent 40%),
+                linear-gradient(180deg, #030304 0%, #0a0a0f 100%);
+        }
+
+        .bg-grid {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: linear-gradient(rgba(212, 175, 55, 0.03) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(212, 175, 55, 0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+            opacity: 0.5;
+        }
+
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-color);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease;
+        }
+
+        .splash-coin {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--gold-light), var(--gold-dark));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.4);
+            animation: pulse-glow 2s infinite ease-in-out;
+            font-size: 28px;
+            font-weight: 800;
+            color: #000;
+            border: 4px solid #FFF;
+        }
+
+        .splash-text {
+            margin-top: 20px;
+            font-size: 14px;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .app-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 480px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 16px 16px 90px 16px;
+            position: relative;
+        }
+
+        .page {
+            display: none;
+            flex-direction: column;
+            gap: 16px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .page.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .glass-card {
+            background: var(--surface-color);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--surface-border);
+            border-radius: 20px;
+            padding: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 8px;
+        }
+
+        .user-info-box {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .user-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .username {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .user-lvl-badge {
+            font-size: 10px;
+            background: rgba(212, 175, 55, 0.2);
+            color: var(--gold-light);
+            padding: 2px 6px;
+            border-radius: 6px;
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            font-weight: 600;
+        }
+
+        .status-ready {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            color: var(--neon-green);
+        }
+
+        .status-ready::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: var(--neon-green);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--neon-green);
+        }
+
+        .lvl-progress-text {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .large-rules-text {
+            font-size: 14px !important;
+            font-weight: 700;
+            color: var(--gold-light);
+            line-height: 1.4;
+        }
+
+        .assets-overview {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .assets-title {
+            font-size: 11px;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .assets-main-value {
+            font-size: 28px;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--gold-light);
+        }
+
+        .wallets-split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 12px;
+        }
+
+        .wallet-item {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .wallet-item span {
+            display: block;
+            color: var(--text-muted);
+            font-size: 10px;
+            margin-bottom: 2px;
+        }
+
+        .wallet-item strong {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-main);
+        }
+
+        .live-reward-container {
+            text-align: center;
+            padding: 10px 0;
+        }
+
+        .live-reward-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .live-reward-value {
+            font-size: 32px;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--neon-green);
+            text-shadow: 0 0 20px rgba(0, 255, 102, 0.4);
+            margin-top: 4px;
+        }
+
+        .mining-visual-area {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            margin: 5px 0;
+        }
+
+        .mining-platform {
+            position: absolute;
+            bottom: 10px;
+            width: 180px;
+            height: 60px;
+            background: radial-gradient(ellipse at center, rgba(212, 175, 55, 0.3) 0%, transparent 70%);
+            border-radius: 50%;
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            box-shadow: 0 0 25px rgba(212, 175, 55, 0.2);
+            animation: pulse-glow 3s infinite ease-in-out;
+        }
+
+        .atc-3d-coin {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #FFF3C4 0%, #D4AF37 50%, #8A6F1E 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 2;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.6), inset 0 -3px 6px rgba(0, 0, 0, 0.5);
+            border: 4px solid #FFEFA6;
+            animation: float-coin 4s infinite ease-in-out;
+        }
+
+        .coin-inner-text {
+            font-size: 28px;
+            font-weight: 800;
+            color: #1A1500;
+            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+            letter-spacing: -1px;
+        }
+
+        @keyframes float-coin {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(2deg); }
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+
+        .claim-btn {
+            background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold-primary) 50%, var(--gold-dark) 100%);
+            color: #0A0A0E;
+            border: none;
+            width: 100%;
+            padding: 16px;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(212, 175, 55, 0.3);
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .claim-btn:active {
+            transform: scale(0.97);
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
+        }
+
+        .timer-box {
+            text-align: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            color: var(--neon-blue);
+            margin-bottom: 8px;
+        }
+
+        .section-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: var(--text-main);
+        }
+
+        .section-link {
+            font-size: 12px;
+            color: var(--gold-light);
+            text-decoration: none;
+        }
+
+        .pnl-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-top: 8px;
+        }
+
+        .pnl-info span {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .pnl-info h4 {
+            font-size: 18px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--neon-green);
+        }
+
+        .mini-chart {
+            height: 40px;
+            display: flex;
+            align-items: flex-end;
+            gap: 4px;
+            width: 120px;
+        }
+
+        .chart-bar.green {
+            flex: 1;
+            background: linear-gradient(to top, rgba(0, 255, 102, 0.2), var(--neon-green));
+            border-radius: 2px 2px 0 0;
+        }
+
+        .miners-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .miner-card {
+            background: var(--surface-color);
+            border: 1px solid var(--surface-border);
+            border-radius: 16px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .miner-card.active-lvl {
+            border-color: var(--gold-primary);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.15);
+        }
+
+        .miner-card.unlockable-lvl {
+            border-color: var(--neon-green);
+        }
+
+        .miner-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .miner-lvl-name {
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .miner-val {
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-muted);
+        }
+
+        .miner-speed {
+            font-size: 11px;
+            color: var(--gold-light);
+        }
+
+        .miner-status {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 3px 8px;
+            border-radius: 6px;
+            align-self: flex-start;
+        }
+
+        .status-active-badge { background: rgba(212, 175, 55, 0.2); color: var(--gold-light); }
+        .status-need-badge { background: rgba(0, 255, 102, 0.2); color: var(--neon-green); }
+        .status-locked-badge { background: rgba(255, 255, 255, 0.05); color: var(--text-muted); }
+
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .task-card {
+            background: var(--surface-color);
+            border: 1px solid var(--surface-border);
+            border-radius: 16px;
+            padding: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .task-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .task-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: rgba(212, 175, 55, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .task-info h4 { font-size: 13px; font-weight: 600; }
+        .task-info p { font-size: 11px; color: var(--neon-green); font-family: 'JetBrains Mono', monospace; }
+
+        .task-action-btn {
+            background: rgba(212, 175, 55, 0.15);
+            border: 1px solid var(--gold-primary);
+            color: var(--gold-light);
+            padding: 6px 14px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .task-action-btn.completed {
+            background: rgba(0, 255, 102, 0.15);
+            border-color: var(--neon-green);
+            color: var(--neon-green);
+            pointer-events: none;
+        }
+
+        .invite-box { display: flex; flex-direction: column; gap: 10px; }
+        .invite-input-row { display: flex; gap: 8px; }
+
+        .invite-link-input {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 10px 12px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            outline: none;
+        }
+
+        .copy-btn {
+            background: var(--gold-primary);
+            color: #000;
+            border: none;
+            padding: 0 16px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .referral-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .ref-stat-card {
+            background: var(--surface-color);
+            border: 1px solid var(--surface-border);
+            border-radius: 16px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .ref-stat-card span { font-size: 11px; color: var(--text-muted); }
+        .ref-stat-card h3 { font-size: 16px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+
+        .friends-list { display: flex; flex-direction: column; gap: 8px; }
+        .friend-row {
+            background: var(--surface-color);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .friend-meta { display: flex; flex-direction: column; gap: 2px; }
+        .friend-name { font-size: 13px; font-weight: 600; }
+        .friend-status { font-size: 11px; font-weight: bold; }
+        .status-pending { color: var(--danger); }
+        .status-success { color: var(--neon-green); }
+
+        .profile-card-group { display: flex; flex-direction: column; gap: 12px; }
+        .profile-row-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--surface-color);
+            border: 1px solid var(--surface-border);
+            border-radius: 14px;
+            padding: 14px;
+        }
+
+        .profile-row-info span { font-size: 11px; color: var(--text-muted); display: block; }
+        .profile-row-info strong { font-size: 14px; font-family: 'JetBrains Mono', monospace; }
+
+        .action-sm-btn {
+            background: rgba(212, 175, 55, 0.15);
+            border: 1px solid var(--gold-primary);
+            color: var(--gold-light);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active { display: flex; }
+        .modal-content {
+            background: #0D0D12;
+            border: 1px solid var(--gold-primary);
+            border-radius: 24px;
+            width: 100%;
+            max-width: 400px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .modal-title { font-size: 18px; font-weight: 700; display: flex; justify-content: space-between; }
+        .close-modal-btn { background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; }
+
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
+        .form-input, .form-select {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px;
+            color: #FFF;
+            font-size: 13px;
+            outline: none;
+        }
+
+        #toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: rgba(18, 18, 24, 0.95);
+            border: 1px solid var(--neon-green);
+            color: var(--text-main);
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 9999;
+            transition: transform 0.3s ease;
+            text-align: center;
+        }
+
+        #toast.show { transform: translateX(-50%) translateY(0); }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 480px;
+            background: rgba(10, 10, 15, 0.9);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(212, 175, 55, 0.15);
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            padding: 10px 8px calc(10px + var(--safe-bottom)) 8px;
+            z-index: 900;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        .nav-item svg { width: 20px; height: 20px; }
+        .nav-item span { font-size: 10px; font-weight: 600; }
+        .nav-item.active { color: var(--gold-light); }
+    </style>
+</head>
+<body>
+
+    <div id="splash-screen">
+        <div class="splash-coin">ATC</div>
+        <div class="splash-text">Connecting Firebase...</div>
+    </div>
+
+    <div id="toast">Connecting...</div>
+
+    <div class="app-bg"><div class="bg-grid"></div></div>
+
+    <div class="app-container">
+        <!-- 1. MINE PAGE -->
+        <div id="page-mine" class="page active">
+            <div class="app-header">
+                <div class="user-info-box">
+                    <div class="user-row">
+                        <span class="username" id="display-username">Loading...</span>
+                        <span class="user-lvl-badge" id="display-user-lvl">Lvl 1</span>
+                        <div class="status-ready" id="mining-status-text">READY</div>
+                    </div>
+                    <span class="lvl-progress-text" id="display-lvl-progress">Calculating...</span>
+                </div>
+            </div>
+
+            <div class="glass-card assets-overview">
+                <span class="assets-title">Assets</span>
+                <div class="assets-main-value" id="display-total-assets">0.0000 ATC</div>
+                <div class="wallets-split">
+                    <div class="wallet-item">
+                        <span>HOLDING WALLET</span>
+                        <strong id="display-holding-wallet">0.0000 ATC</strong>
+                    </div>
+                    <div class="wallet-item">
+                        <span>POOL WALLET</span>
+                        <strong id="display-pool-wallet">0.0000 ATC</strong>
+                    </div>
+                </div>
+                <div class="live-reward-container">
+                    <span class="live-reward-label">Accumulating Reward</span>
+                    <div class="live-reward-value" id="display-live-reward">+0.0000</div>
+                </div>
+            </div>
+
+            <div class="mining-visual-area">
+                <div class="mining-platform"></div>
+                <div class="atc-3d-coin"><div class="coin-inner-text">ATC</div></div>
+            </div>
+
+            <div class="timer-box" id="mining-timer">Time Left: 60:00</div>
+            <button class="claim-btn" id="start-mine-btn" onclick="triggerAdWatcher('mining')">Start Mining (Watch 5 Ads)</button>
+            <button class="claim-btn" id="claim-btn" onclick="claimRewards()" style="margin-top: 10px; display: none;">Claim Rewards</button>
+        </div>
+
+        <!-- 2. TASKS PAGE -->
+        <div id="page-tasks" class="page">
+            <div class="app-header">
+                <div class="user-info-box">
+                    <span class="username" style="font-size: 22px;">DAILY ADS TASKS</span>
+                    <span class="lvl-progress-text large-rules-text">Watch Ads (10s Minimum) to earn 2 Coins each (15 Daily Limit)</span>
+                </div>
+            </div>
+            <div class="task-list" id="task-list-container"></div>
+        </div>
+
+        <!-- 3. MINERS PAGE -->
+        <div id="page-miners" class="page">
+            <div class="app-header">
+                <div class="user-info-box">
+                    <span class="username" style="font-size: 22px;">MY LEVEL JOURNEY</span>
+                    <span class="lvl-progress-text" id="miners-journey-subtitle">Level 1 • Peak 100</span>
+                </div>
+            </div>
+            <div class="glass-card">
+                <div class="section-header-row">
+                    <span class="section-title">Today's P&L</span>
+                    <a href="#" class="section-link">Full Chart →</a>
+                </div>
+                <div class="pnl-box">
+                    <div class="pnl-info">
+                        <span>Net Profit / Loss</span>
+                        <h4 id="miners-pnl-value">+$1,118.6</h4>
+                    </div>
+                    <div class="mini-chart">
+                        <div class="chart-bar green" style="height: 40%;"></div>
+                        <div class="chart-bar green" style="height: 60%;"></div>
+                        <div class="chart-bar green" style="height: 80%;"></div>
+                        <div class="chart-bar green" style="height: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="miners-grid" id="miners-grid-container"></div>
+        </div>
+
+        <!-- 4. FRIENDS PAGE -->
+        <div id="page-friends" class="page">
+            <div class="app-header">
+                <div class="user-info-box">
+                    <span class="username" style="font-size: 24px; color: var(--gold-light);">FRIENDS SYSTEM</span>
+                    <span class="lvl-progress-text large-rules-text">
+                        ★ REFERRAL RULES:<br>
+                        Invite friends to get 100 Coins! Invited users will show <u>Pending</u> until they watch 5 Ads and start mining. Once started, status changes to <u>Successful</u>!
+                    </span>
+                </div>
+            </div>
+
+            <div class="glass-card invite-box">
+                <span class="assets-title" style="font-size: 13px; font-weight: bold; color: var(--gold-light);">YOUR EXCLUSIVE INVITE LINK</span>
+                <div class="invite-input-row">
+                    <input type="text" class="invite-link-input" id="referral-link-input" readonly>
+                    <button class="copy-btn" onclick="copyReferralLink()">Copy</button>
+                </div>
+            </div>
+
+            <div class="referral-stats-grid">
+                <div class="ref-stat-card">
+                    <span>Successful Referrals</span>
+                    <h3 id="ref-stats-count" style="color: var(--neon-green);">0 Successful</h3>
+                </div>
+                <div class="ref-stat-card">
+                    <span>Pending Referrals</span>
+                    <h3 id="ref-pending-count" style="color: var(--danger);">0 Pending</h3>
+                </div>
+            </div>
+
+            <button class="claim-btn" id="view-ref-stats-btn" style="margin: 5px 0; background: var(--surface-color); border: 1px solid var(--gold-primary); color: var(--gold-light); font-size: 14px;">
+                📊 VIEW TOTAL REFERRAL STATS
+            </button>
+
+            <div>
+                <span class="assets-title" style="margin-bottom: 8px; display:block; font-size: 13px; font-weight: 700;">INVITED FRIENDS LIST</span>
+                <div class="friends-list" id="friends-list-container"></div>
+            </div>
+        </div>
+
+        <!-- 5. PROFILE PAGE -->
+        <div id="page-profile" class="page">
+            <div class="app-header">
+                <div class="user-info-box">
+                    <span class="username" style="font-size: 22px;">PROFILE & SETTINGS</span>
+                    <span class="lvl-progress-text">Account Settings & Withdrawals</span>
+                </div>
+            </div>
+            <div class="profile-card-group">
+                <div class="profile-row-item">
+                    <div class="profile-row-info">
+                        <span>User ID</span>
+                        <strong id="profile-user-id">---</strong>
+                    </div>
+                    <button class="action-sm-btn" id="verify-action-btn">Verified</button>
+                </div>
+                <div class="profile-row-item">
+                    <div class="profile-row-info">
+                        <span>Assets Balance</span>
+                        <strong id="profile-assets-balance">0.0000 ATC</strong>
+                    </div>
+                </div>
+                <div class="profile-row-item">
+                    <div class="profile-row-info">
+                        <span>Pool Wallet (Withdrawable)</span>
+                        <strong id="profile-pool-balance">0.0000 ATC</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="glass-card">
+                <span class="assets-title" style="margin-bottom: 8px; display:block;">CONTROLS</span>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <strong>Withdraw Pool</strong>
+                        <span style="display:block; font-size:11px; color:var(--text-muted);">Minimum: 500 Coins</span>
+                    </div>
+                    <button class="action-sm-btn" onclick="openWithdrawModal()">Withdraw</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Bar -->
+    <nav class="bottom-nav">
+        <button class="nav-item active" onclick="switchTab('mine', this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            <span>Mine</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('tasks', this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            <span>Tasks</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('miners', this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/></svg>
+            <span>Miners</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('friends', this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            <span>Friends</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('profile', this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span>Profile</span>
+        </button>
+    </nav>
+
+    <!-- Modals -->
+    <div class="modal-overlay" id="modal-withdraw">
+        <div class="modal-content">
+            <div class="modal-title">
+                <span>Withdraw Coins</span>
+                <button class="close-modal-btn" onclick="closeModals()">&times;</button>
+            </div>
+            <div class="form-group">
+                <label>Withdrawal Method</label>
+                <select class="form-select" id="withdraw-method">
+                    <option value="BEP20">BEP20</option>
+                    <option value="BNB">BNB (BEP20)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Wallet Address</label>
+                <input type="text" class="form-input" id="withdraw-address" placeholder="Enter BEP20 / BNB Address...">
+            </div>
+            <div class="form-group">
+                <label>Amount (Min: 500 Coins)</label>
+                <input type="number" class="form-input" id="withdraw-amount" placeholder="500">
+            </div>
+            <button class="claim-btn" onclick="submitWithdrawal()">Confirm Withdrawal</button>
+        </div>
+    </div>
+
+    <!-- Firebase System Modules Setup -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, runTransaction, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBhrqjV5mHJqKkM0imgtCoZt24arM92BAE",
+            authDomain: "atc-bb43a.firebaseapp.com",
+            projectId: "atc-bb43a",
+            storageBucket: "atc-bb43a.firebasestorage.app",
+            messagingSenderId: "869096886701",
+            appId: "1:869096886701:web:02a16732530d85cb0b1124",
+            measurementId: "G-8E89FN5NR4"
+        };
+
+        let app, db;
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+        } catch (err) {
+            console.error("Firebase Initialization Error:", err);
+            document.body.innerHTML = `<div style="padding: 40px; color: #FF3366; text-align: center; font-family: sans-serif;"><h3>Connection Error</h3><p>Unable to connect to backend service. Please check your network connection or try again later.</p></div>`;
+        }
+
+        const CONFIG = {
+            MIN_WITHDRAW: 500,
+            REFERRAL_REWARD: 100,
+            MINING_DURATION_SEC: 3600,
+            DAILY_ADS_LIMIT: 15,
+            DAILY_AD_REWARD: 2,
+            BOT_USERNAME: "ATC_MINING_BOT",
+            AD_URL: "https://www.profitableratecpmnetwork.com/v5r7tep7sm?key=1e539457dd5d47ea9f29decdd3259627"
+        };
+
+        let userData = {
+            telegramId: "",
+            username: "Guest",
+            poolWallet: 0.00,
+            holdingWallet: 0.00,
+            level: 1,
+            miningSpeed: 0.1,
+            liveReward: 0.00,
+            isMining: false,
+            miningStartTimestamp: 0,
+            miningEndTimestamp: 0,
+            adsWatchedForMining: 0,
+            dailyAdsWatched: 0,
+            lastAdsResetDate: new Date().toDateString(),
+            referralsCount: 0,
+            invitedFriends: [],
+            referredBy: null,
+            hasRewardClaimedForReferrer: false,
+            createdAt: new Date().toISOString()
+        };
+
+        const LEVEL_REQUIREMENTS = [];
+        for (let i = 1; i <= 100; i++) {
+            LEVEL_REQUIREMENTS.push({
+                level: i,
+                req: Math.floor((i - 1) * 500),
+                speed: parseFloat((0.1 * i).toFixed(2))
+            });
+        }
+
+        window.showToast = function(message) {
+            const toast = document.getElementById('toast');
+            if(toast) {
+                toast.innerText = message;
+                toast.classList.add('show');
+                setTimeout(() => { toast.classList.remove('show'); }, 2500);
+            }
+        };
+
+        window.switchTab = function(tabId, btnElement) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            const targetPage = document.getElementById(`page-${tabId}`);
+            if(targetPage) targetPage.classList.add('active');
+            
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            if(btnElement) btnElement.classList.add('active');
+        };
+
+        window.copyReferralLink = function() {
+            let input = document.getElementById('referral-link-input');
+            input.select();
+            input.setSelectionRange(0, 99999);
+            
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(input.value).then(() => {
+                    window.showToast("Invite link copied!");
+                }).catch(() => {
+                    document.execCommand("copy");
+                    window.showToast("Invite link copied!");
+                });
+            } else {
+                document.execCommand("copy");
+                window.showToast("Invite link copied!");
+            }
+        };
+
+        window.openWithdrawModal = function() { 
+            document.getElementById('modal-withdraw').classList.add('active'); 
+        };
+        
+        window.closeModals = function() { 
+            document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active')); 
+        };
+
+        window.triggerAdWatcher = function(type, taskNum = null) {
+            window.showToast("Notice: Ad network postback not integrated. Running Demo/Test mode validation.");
+            window.open(CONFIG.AD_URL, '_blank');
+            let timerSec = 3;
+            let interval = setInterval(() => {
+                window.showToast(`Test Mode Ad Validation: ${timerSec}s...`);
+                timerSec--;
+                if(timerSec < 0) {
+                    clearInterval(interval);
+                    if(type === 'mining') {
+                        startMiningProcess();
+                    } else if(type === 'task') {
+                        watchDailyAd(taskNum);
+                    }
+                }
+            }, 1000);
+        };
+
+        async function processReferralReward() {
+            if (!userData.referredBy || userData.referredBy === userData.telegramId || userData.hasRewardClaimedForReferrer) {
+                return;
+            }
+
+            const currentUserId = userData.telegramId;
+            const referrerId = userData.referredBy;
+            const userRef = doc(db, "users", currentUserId);
+            const referrerRef = doc(db, "users", referrerId);
+
+            try {
+                await runTransaction(db, async (transaction) => {
+                    const userDoc = await transaction.get(userRef);
+                    if (!userDoc.exists()) return;
+
+                    const uData = userDoc.data();
+                    if (uData.hasRewardClaimedForReferrer) return;
+
+                    const referrerDoc = await transaction.get(referrerRef);
+                    if (referrerDoc.exists()) {
+                        const refData = referrerDoc.data();
+                        let friends = refData.invitedFriends || [];
+                        let found = false;
+
+                        let updatedFriends = friends.map(f => {
+                            if (f.id === currentUserId) {
+                                found = true;
+                                return { ...f, status: 'Successful', reward: CONFIG.REFERRAL_REWARD };
+                            }
+                            return f;
+                        });
+
+                        if (!found) {
+                            updatedFriends.push({
+                                id: currentUserId,
+                                username: userData.username,
+                                name: `@${userData.username}`,
+                                status: 'Successful',
+                                reward: CONFIG.REFERRAL_REWARD,
+                                date: new Date().toLocaleDateString()
+                            });
+                        }
+
+                        let currentRefTotal = updatedFriends.filter(f => f.status === 'Successful').length;
+
+                        transaction.update(referrerRef, {
+                            poolWallet: (refData.poolWallet || 0) + CONFIG.REFERRAL_REWARD,
+                            referralsCount: currentRefTotal,
+                            invitedFriends: updatedFriends
+                        });
+                    }
+
+                    transaction.update(userRef, {
+                        hasRewardClaimedForReferrer: true
+                    });
+                });
+
+                userData.hasRewardClaimedForReferrer = true;
+            } catch (err) {
+                console.error("Atomic Referral Reward Error:", err);
+            }
+        }
+
+        async function startMiningProcess() {
+            if (userData.isMining) return;
+
+            userData.adsWatchedForMining++;
+            window.showToast(`Ad Validated! (${userData.adsWatchedForMining}/5)`);
+
+            if (userData.adsWatchedForMining >= 5) {
+                await processReferralReward();
+                userData.isMining = true;
+                userData.miningStartTimestamp = Date.now();
+                userData.miningEndTimestamp = Date.now() + (CONFIG.MINING_DURATION_SEC * 1000);
+                window.showToast("5 Ads Completed! 1 Hour Mining Started.");
+            }
+            saveStateToFirebase();
+        }
+
+        window.claimRewards = function() {
+            if (userData.liveReward <= 0) {
+                window.showToast("No rewards to claim!");
+                return;
+            }
+            userData.poolWallet += userData.liveReward;
+            userData.liveReward = 0.00;
+            updateUI();
+            saveStateToFirebase();
+            window.showToast("Rewards claimed to Pool Wallet!");
+        };
+
+        function watchDailyAd(taskNum) {
+            if (taskNum <= userData.dailyAdsWatched) return;
+
+            userData.dailyAdsWatched++;
+            userData.poolWallet += CONFIG.DAILY_AD_REWARD;
+            window.showToast(`Task #${taskNum} Completed! +${CONFIG.DAILY_AD_REWARD} Coins added.`);
+            renderTasks();
+            updateUI();
+            saveStateToFirebase();
+        }
+
+        window.submitWithdrawal = async function() {
+            let method = document.getElementById('withdraw-method').value;
+            let amount = parseFloat(document.getElementById('withdraw-amount').value);
+            let address = document.getElementById('withdraw-address').value;
+
+            if (!address || isNaN(amount) || amount < CONFIG.MIN_WITHDRAW) {
+                window.showToast(`Minimum withdrawal is ${CONFIG.MIN_WITHDRAW} Coins!`);
+                return;
+            }
+            if (amount > userData.poolWallet) {
+                window.showToast("Insufficient pool wallet balance!");
+                return;
+            }
+
+            const userRef = doc(db, "users", userData.telegramId);
+            try {
+                await runTransaction(db, async (transaction) => {
+                    const uSnap = await transaction.get(userRef);
+                    if (!uSnap.exists()) throw new Error("User does not exist");
+                    
+                    const currentPool = uSnap.data().poolWallet || 0;
+                    if (amount > currentPool) {
+                        throw new Error("Insufficient pool wallet balance!");
+                    }
+
+                    transaction.update(userRef, {
+                        poolWallet: currentPool - amount
+                    });
+
+                    const withdrawalRef = doc(collection(db, "withdrawals"));
+                    transaction.set(withdrawalRef, {
+                        userId: userData.telegramId,
+                        username: userData.username,
+                        amount: amount,
+                        walletAddress: address,
+                        method: method,
+                        timestamp: new Date().toISOString(),
+                        status: "Pending"
+                    });
+                });
+
+                userData.poolWallet -= amount;
+                saveStateToFirebase();
+                window.closeModals();
+                window.showToast(`Withdrawal request submitted via ${method}!`);
+                updateUI();
+            } catch (err) {
+                console.error("Withdrawal Error:", err);
+                window.showToast(err.message || "Withdrawal failed. Please try again.");
+            }
+        };
+
+        function hideSplashScreen() {
+            const splash = document.getElementById('splash-screen');
+            if (splash) {
+                splash.style.opacity = '0';
+                setTimeout(() => splash.remove(), 500);
+            }
+        }
+
+        async function initializeUserInFirebase(referrerId) {
+            try {
+                const userRef = doc(db, "users", userData.telegramId);
+
+                await runTransaction(db, async (transaction) => {
+                    const userSnap = await transaction.get(userRef);
+
+                    if (!userSnap.exists()) {
+                        let validReferrer = (referrerId && referrerId !== userData.telegramId) ? referrerId : null;
+
+                        let newUserData = {
+                            telegramId: userData.telegramId,
+                            username: userData.username,
+                            poolWallet: 0,
+                            holdingWallet: 0,
+                            level: 1,
+                            miningSpeed: 0.1,
+                            liveReward: 0,
+                            isMining: false,
+                            miningStartTimestamp: 0,
+                            miningEndTimestamp: 0,
+                            adsWatchedForMining: 0,
+                            dailyAdsWatched: 0,
+                            lastAdsResetDate: new Date().toDateString(),
+                            referralsCount: 0,
+                            invitedFriends: [],
+                            referredBy: validReferrer,
+                            hasRewardClaimedForReferrer: false,
+                            createdAt: new Date().toISOString()
+                        };
+
+                        transaction.set(userRef, newUserData);
+
+                        if (validReferrer) {
+                            const referrerRef = doc(db, "users", validReferrer);
+                            const referrerSnap = await transaction.get(referrerRef);
+
+                            if (referrerSnap.exists()) {
+                                let refData = referrerSnap.data();
+                                let friends = refData.invitedFriends || [];
+
+                                if (!friends.some(f => f.id === userData.telegramId)) {
+                                    friends.push({
+                                        id: userData.telegramId,
+                                        username: userData.username,
+                                        name: `@${userData.username}`,
+                                        status: 'Pending',
+                                        reward: 0,
+                                        date: new Date().toLocaleDateString()
+                                    });
+
+                                    transaction.update(referrerRef, {
+                                        invitedFriends: friends
+                                    });
+                                }
+                            }
+                        }
+                    }
+                });
+
+                onSnapshot(userRef, (snapshot) => {
+                    if (snapshot.exists()) {
+                        const data = snapshot.data();
+                        userData = { ...userData, ...data };
+                        
+                        let today = new Date().toDateString();
+                        if (userData.lastAdsResetDate !== today) {
+                            userData.dailyAdsWatched = 0;
+                            userData.lastAdsResetDate = today;
+                            saveStateToFirebase();
+                        }
+
+                        renderFriends();
+                        updateUI();
+                    }
+                });
+            } catch (error) {
+                console.error("Firebase Init Error:", error);
+                window.showToast("Error loading user profile. Check connection.");
+            } finally {
+                hideSplashScreen();
+            }
+        }
+
+        async function saveStateToFirebase() {
+            try {
+                const userRef = doc(db, "users", userData.telegramId);
+                await updateDoc(userRef, {
+                    telegramId: userData.telegramId,
+                    username: userData.username,
+                    poolWallet: userData.poolWallet,
+                    holdingWallet: userData.holdingWallet,
+                    level: userData.level,
+                    miningSpeed: userData.miningSpeed,
+                    liveReward: userData.liveReward,
+                    isMining: userData.isMining,
+                    miningStartTimestamp: userData.miningStartTimestamp,
+                    miningEndTimestamp: userData.miningEndTimestamp,
+                    adsWatchedForMining: userData.adsWatchedForMining,
+                    dailyAdsWatched: userData.dailyAdsWatched,
+                    lastAdsResetDate: userData.lastAdsResetDate,
+                    referralsCount: userData.referralsCount,
+                    invitedFriends: userData.invitedFriends || [],
+                    referredBy: userData.referredBy || null,
+                    hasRewardClaimedForReferrer: userData.hasRewardClaimedForReferrer
+                });
+            } catch (err) {
+                console.error("Firebase Save Error: ", err);
+            }
+        }
+
+        function miningTimerLoop() {
+            let now = Date.now();
+            let startBtn = document.getElementById('start-mine-btn');
+            let claimBtn = document.getElementById('claim-btn');
+            let timerBox = document.getElementById('mining-timer');
+            let statusText = document.getElementById('mining-status-text');
+
+            if (!startBtn || !claimBtn || !timerBox || !statusText) return;
+
+            if (userData.isMining) {
+                let remaining = Math.max(0, Math.floor((userData.miningEndTimestamp - now) / 1000));
+                
+                if (remaining > 0) {
+                    if (userData.miningStartTimestamp) {
+                        let elapsedSeconds = Math.min(CONFIG.MINING_DURATION_SEC, Math.floor((now - userData.miningStartTimestamp) / 1000));
+                        userData.liveReward = parseFloat(((elapsedSeconds / 3600) * userData.miningSpeed).toFixed(6));
+                    }
+                    let mins = Math.floor(remaining / 60);
+                    let secs = remaining % 60;
+                    timerBox.innerText = `Mining Active: ${mins}:${secs < 10 ? '0' : ''}${secs}`;
+                    startBtn.style.display = 'none';
+                    claimBtn.style.display = 'block';
+                    statusText.innerText = "MINING...";
+                    statusText.style.color = "var(--neon-green)";
+                } else {
+                    userData.isMining = false;
+                    userData.liveReward = parseFloat((CONFIG.MINING_DURATION_SEC / 3600 * userData.miningSpeed).toFixed(6));
+                    userData.adsWatchedForMining = 0;
+                    timerBox.innerText = "Session Ended! Watch 5 Ads to Start.";
+                    startBtn.innerText = "Start Mining (Watch 5 Ads)";
+                    startBtn.style.display = 'block';
+                    claimBtn.style.display = 'block';
+                    statusText.innerText = "STOPPED";
+                    statusText.style.color = "var(--danger)";
+                    saveStateToFirebase();
+                }
+            } else {
+                timerBox.innerText = `Watch 5 Ads to start mining (${userData.adsWatchedForMining}/5 watched)`;
+                startBtn.innerText = `Watch Ad (${userData.adsWatchedForMining}/5)`;
+                startBtn.style.display = 'block';
+                claimBtn.style.display = userData.liveReward > 0 ? 'block' : 'none';
+                statusText.innerText = "OFFLINE";
+                statusText.style.color = "var(--text-muted)";
+            }
+
+            checkLevelProgress();
+            updateUI();
+        }
+
+        function updateUI() {
+            let totalAssets = userData.poolWallet + userData.holdingWallet + userData.liveReward;
+            document.getElementById('display-live-reward').innerText = `+${userData.liveReward.toFixed(4)}`;
+            document.getElementById('display-total-assets').innerText = `${totalAssets.toFixed(4)} ATC`;
+            document.getElementById('display-pool-wallet').innerText = `${userData.poolWallet.toFixed(4)} ATC`;
+            document.getElementById('display-holding-wallet').innerText = `${userData.holdingWallet.toFixed(4)} ATC`;
+            document.getElementById('profile-assets-balance').innerText = `${totalAssets.toFixed(4)} ATC`;
+            document.getElementById('profile-pool-balance').innerText = `${userData.poolWallet.toFixed(4)} ATC`;
+            
+            let successfulCount = (userData.invitedFriends || []).filter(f => f.status === 'Successful').length;
+            let pendingCount = (userData.invitedFriends || []).filter(f => f.status === 'Pending').length;
+
+            document.getElementById('ref-stats-count').innerText = `${successfulCount} Successful`;
+            document.getElementById('ref-pending-count').innerText = `${pendingCount} Pending`;
+        }
+
+        function checkLevelProgress() {
+            let totalAssets = userData.poolWallet + userData.holdingWallet + userData.liveReward;
+            
+            for (let i = LEVEL_REQUIREMENTS.length - 1; i >= 0; i--) {
+                if (totalAssets >= LEVEL_REQUIREMENTS[i].req) {
+                    if (userData.level !== LEVEL_REQUIREMENTS[i].level) {
+                        userData.level = LEVEL_REQUIREMENTS[i].level;
+                        userData.miningSpeed = LEVEL_REQUIREMENTS[i].speed;
+                        window.showToast(`Leveled Up to Lvl ${userData.level}!`);
+                        renderMinersGrid();
+                        saveStateToFirebase();
+                    }
+                    break;
+                }
+            }
+
+            let nextLvlObj = LEVEL_REQUIREMENTS.find(l => l.level === userData.level + 1);
+            if (nextLvlObj) {
+                let diff = nextLvlObj.req - totalAssets;
+                document.getElementById('display-user-lvl').innerText = `Lvl ${userData.level}`;
+                document.getElementById('display-lvl-progress').innerText = `${diff.toFixed(2)} ATC left to Lvl ${userData.level + 1}`;
+            }
+        }
+
+        function renderMinersGrid() {
+            const container = document.getElementById('miners-grid-container');
+            if(!container) return;
+            container.innerHTML = '';
+            let totalAssets = userData.poolWallet + userData.holdingWallet;
+
+            LEVEL_REQUIREMENTS.forEach(lvl => {
+                let isCurrent = lvl.level === userData.level;
+                let isUnlocked = totalAssets >= lvl.req;
+
+                let cardClass = isCurrent ? 'miner-card active-lvl' : (isUnlocked ? 'miner-card unlockable-lvl' : 'miner-card');
+                let badgeClass = isCurrent ? 'status-active-badge' : (isUnlocked ? 'status-need-badge' : 'status-locked-badge');
+                let badgeText = isCurrent ? 'ACTIVE' : (isUnlocked ? 'UNLOCKED' : 'LOCKED');
+
+                container.innerHTML += `
+                    <div class="${cardClass}">
+                        <div class="miner-top">
+                            <span class="miner-lvl-name">Lvl ${lvl.level}</span>
+                            <span class="miner-val">${lvl.req} ATC</span>
+                        </div>
+                        <span class="miner-speed">Speed +${lvl.speed}/hr</span>
+                        <span class="miner-status ${badgeClass}">${badgeText}</span>
+                    </div>
+                `;
+            });
+        }
+
+        function renderTasks() {
+            const container = document.getElementById('task-list-container');
+            if(!container) return;
+            container.innerHTML = '';
+            
+            for (let i = 1; i <= CONFIG.DAILY_ADS_LIMIT; i++) {
+                let isDone = i <= userData.dailyAdsWatched;
+                container.innerHTML += `
+                    <div class="task-card">
+                        <div class="task-left">
+                            <div class="task-icon">📺</div>
+                            <div class="task-info">
+                                <h4>Daily Ad Task #${i}</h4>
+                                <p>+${CONFIG.DAILY_AD_REWARD} ATC</p>
+                            </div>
+                        </div>
+                        <button class="task-action-btn ${isDone ? 'completed' : ''}" onclick="triggerAdWatcher('task', ${i})">
+                            ${isDone ? 'Completed' : 'Watch Ad'}
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        function renderFriends() {
+            const container = document.getElementById('friends-list-container');
+            if(!container) return;
+            container.innerHTML = '';
+            
+            if (!userData.invitedFriends || userData.invitedFriends.length === 0) {
+                container.innerHTML = `<div style="font-size:12px; color:var(--text-muted);">No friends invited yet.</div>`;
+                return;
+            }
+
+            userData.invitedFriends.forEach(f => {
+                let friendDisplayName = f.username || f.name || "User";
+                if(!friendDisplayName.startsWith('@')) friendDisplayName = '@' + friendDisplayName;
+                
+                let isSuccess = f.status === 'Successful';
+
+                container.innerHTML += `
+                    <div class="friend-row">
+                        <div class="friend-meta">
+                            <span class="friend-name">${friendDisplayName}</span>
+                            <span class="friend-status ${isSuccess ? 'status-success' : 'status-pending'}">
+                                ● ${isSuccess ? 'Successful (+100 Coins)' : 'Pending (Needs 5 Ads Mining)'}
+                            </span>
+                        </div>
+                        <span style="font-size: 14px;">${isSuccess ? '🟢' : '🟡'}</span>
+                    </div>
+                `;
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            let referrerId = null;
+
+            if (window.Telegram && window.Telegram.WebApp) {
+                const tg = window.Telegram.WebApp;
+                tg.expand();
+                if (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
+                    userData.username = tg.initDataUnsafe.user.username || tg.initDataUnsafe.user.first_name || "User";
+                    userData.telegramId = tg.initDataUnsafe.user.id.toString();
+                }
+                
+                if (tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
+                    referrerId = tg.initDataUnsafe.start_param.replace(/^U/, '');
+                }
+            }
+
+            if (!userData.telegramId) {
+                userData.telegramId = "mock_user_" + Math.floor(Math.random() * 1000000);
+            }
+
+            document.getElementById('display-username').innerText = userData.username;
+            document.getElementById('profile-user-id').innerText = userData.telegramId;
+            document.getElementById('referral-link-input').value = `https://t.me/${CONFIG.BOT_USERNAME}?start=U${userData.telegramId}`;
+
+            const refBtn = document.getElementById('view-ref-stats-btn');
+            if(refBtn) {
+                refBtn.addEventListener('click', () => {
+                    let total = userData.invitedFriends ? userData.invitedFriends.length : 0;
+                    let success = (userData.invitedFriends || []).filter(f => f.status === 'Successful').length;
+                    alert(`Total Invited: ${total}\nSuccessful: ${success}\nPending: ${total - success}`);
+                });
+            }
+
+            renderMinersGrid();
+            renderTasks();
+
+            await initializeUserInFirebase(referrerId);
+
+            setInterval(miningTimerLoop, 1000);
+        });
+    </script>
+</body>
+</html>
